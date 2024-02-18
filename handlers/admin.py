@@ -5,7 +5,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from configurebot import cfg
 from aiogram.filters import Text
-from keyboards import kb_admin, kb_admin_ret, kb_client
+from keyboards import kb_admin, kb_admin_ret, kb_client, kb_manager
 import json
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
@@ -29,6 +29,28 @@ adm_id = cfg['adm_id']
 mng_id = cfg['mng_id']
 
 
+# Обработка кнопки отмены
+@router.message((F.text == 'Отменить ввод') & (F.from_user.id.in_(adm_id)) & (F.chat.type.in_({"group"})))
+async def cmd_cancel(message: types.Message, state: FSMContext):
+    if await state.get_state() is not None:
+        await state.clear()
+        await message.answer(text="Вы отменили ввод текста", reply_markup=kb_manager)
+    else:
+        pass
+
+
+# запуск клавиатуры клиента
+@router.message((F.text == '/client') & (F.from_user.id.in_(adm_id)) & (F.chat.type.in_({"group"})))
+async def admin_kb(message: types.Message):
+    await message.answer('↓ Вы переключились в меню клиента ↓', reply_markup=kb_client)
+
+
+# запуск клавиатуры менеджера
+@router.message((F.text == '/manager') & (F.from_user.id.in_(adm_id)) & (F.chat.type.in_({"group"})))
+async def admin_kb(message: types.Message):
+    await message.answer('↓ Вы переключились в меню менеджера ↓', reply_markup=kb_manager)
+
+
 # запуск админской клавиатуры
 @router.message((F.text == '/admin') & (F.from_user.id.in_(adm_id)))
 async def admin_kb(message: types.Message):
@@ -45,7 +67,7 @@ async def cmd_cancel(message: types.Message, state: FSMContext):
 # Обработка кнопки выхода из админки
 @router.message((F.text == 'Выйти из меню администратора') & (F.from_user.id.in_(adm_id)))
 async def cmd_cancel(message: types.Message):
-    await message.answer('Вы вернулись в меню для клиентов', reply_markup=kb_client)
+    await message.answer('Вы вернулись в меню менеджера', reply_markup=kb_manager)
 
 
 # загрузка условий проката

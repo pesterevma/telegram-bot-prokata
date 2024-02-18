@@ -230,15 +230,15 @@ async def book_step(message: types.Message, state: FSMContext):
                                text=f'Ваша заявка <b>#{number_b}</b> отправлена, наш менеджер пришлёт ответ в этот чат в рабочее время.',
                                parse_mode='HTML', reply_markup=kb_client)
         book = f'''
-<b>ID:</b> {user_data['user_id']}       
-<b>ФИО:</b> {user_data['name']}
-<b>Постоянный клиент:</b> {user_data['old_client']}
-<b>Тел.:</b> {user_data['phone']}'''
+<b>ID:</b> #id_{user_data['user_id']}       
+<b>ФИО:</b> <code>{user_data['name']}</code>
+<b>Постоянный клиент:</b> <code>{user_data['old_client']}</code>
+<b>Тел.:</b> <code>{user_data['phone']}</code>'''
         if user_data['old_client'] == 'Нет':
-            book += f'''\n<b>Адрес:</b> {user_data['address']}'''
+            book += f'''\n<b>Адрес:</b> <code>{user_data['address']}</code>'''
         book += f'''
-<b>Даты проката:</b> {datetime.strftime(user_data['start'], "%d.%m.%y")} - {datetime.strftime(user_data['end'], "%d.%m.%y")}
-<b>Снаряжение:</b> {user_data['equip']}'''
+<b>Даты проката:</b> <code>{datetime.strftime(user_data['start'], "%d.%m.%y")} - {datetime.strftime(user_data['end'], "%d.%m.%y")}</code>
+<b>Снаряжение:</b> <code>{user_data['equip']}</code>'''
         # создание инлайн клавиатуры
         builder = InlineKeyboardBuilder()
         builder.add(types.InlineKeyboardButton(text="Ответить на заявку", callback_data=f'b{user_data["user_id"]}'))

@@ -16,3 +16,8 @@ kb_ret = [[b5]]
 
 kb_admin_ret = ReplyKeyboardMarkup(keyboard=kb_ret, resize_keyboard=True)
 
+# формирование клавиатуры менеджера
+b1 = KeyboardButton(text='Отменить ввод')
+kb = [[b1]]
+
+kb_manager = ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)

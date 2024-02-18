@@ -108,9 +108,9 @@ async def load_question(message: types.Message, state: FSMContext):
 @router.message(FSMclient.question)
 async def load_question(message: types.Message, state: FSMContext):
     if (message.chat.username == None):
-        who = f'Ник не установлен, ID: {message.chat.id}'
+        who = f'Ник не установлен, ID: #id_{message.chat.id}'
     else:
-        who = f'@{message.chat.username}, ID: {message.chat.id}'
+        who = f'@{message.chat.username}, ID: #id_{message.chat.id}'
     date = message.date
     date_ekb = date.astimezone(timezone('Asia/Yekaterinburg'))
     formatted_date = date_ekb.strftime("%d%H%M%S")
