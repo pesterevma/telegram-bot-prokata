@@ -8,6 +8,7 @@ from aiogram.filters import Text
 from keyboards import kb_admin, kb_admin_ret, kb_client
 import json
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 
 class FSMadmin(StatesGroup):
@@ -153,9 +154,15 @@ async def send_manager_answer(callback: types.CallbackQuery, state: FSMContext):
     await state.update_data(user_id=user_id)
     number_q = callback.message.text.split('#')[1][:12]
     await state.update_data(number_q=number_q)
+
+    # создание инлайн клавиатуры
+    builder = InlineKeyboardBuilder()
+    builder.add(types.InlineKeyboardButton(text="Отмена", callback_data=f'отмена_ответа'))
+    builder.add(types.InlineKeyboardButton(text="Шаблоны", callback_data=f'шаблоны'))
+
     await bot.send_message(chat_id=group_id,
                            text=f"Напишите ниже ответ на вопрос\n<b>#{number_q}</b>:\n\
-<b>{callback.message.text.split('Вопрос: ')[1]}</b>", parse_mode='HTML')
+<b>{callback.message.text.split('Вопрос: ')[1]}</b>", parse_mode='HTML', reply_markup=builder.as_markup())
     await state.set_state(FSMadmin.answer)
 
 
@@ -207,7 +214,7 @@ async def book_step(message: types.Message, state: FSMContext):
     await message.answer('Отправьте ответ <b>текстовым сообщением, картинкой или документом</b>', parse_mode='HTML')
 
 
-# обработка инлайн кнопки "ответить на вопрос" продолжение
+# обработка инлайн кнопки "ответить на вопрос" окончание
 @router.message(FSMadmin.answer)
 async def load_answer(message: types.Message, state: FSMContext):
     answer = message.text
@@ -233,10 +240,38 @@ async def send_manager_answer(callback: types.CallbackQuery, state: FSMContext):
     await state.update_data(user_id=user_id)
     number_b = callback.message.text.split('#')[1][:12]
     await state.update_data(number_b=number_b)
+
+    # создание инлайн клавиатуры
+    builder = InlineKeyboardBuilder()
+    builder.add(types.InlineKeyboardButton(text="Отмена", callback_data=f'отмена_ответа'))
+    builder.add(types.InlineKeyboardButton(text="Шаблоны", callback_data=f'шаблоны'))
+
     await bot.send_message(chat_id=group_id,
                            text=f"Напишите ниже ответ на заявку <b>#{number_b}</b>:\nID:\
-{callback.message.text.split('ID:')[1]}", parse_mode='HTML')
+{callback.message.text.split('ID:')[1]}", parse_mode='HTML', reply_markup=builder.as_markup())
     await state.set_state(FSMadmin.answer_book)
+
+
+# обработка инлайн кнопки "отмена" ответа
+@router.callback_query(Text(startswith='отмена_ответа'))
+async def delete_button(callback: types.CallbackQuery, state: FSMContext):
+    await bot.delete_message(chat_id=group_id, message_id=callback.message.message_id)
+    await state.clear()
+
+
+# обработка инлайн кнопки "шаблоны"
+@router.callback_query(Text(startswith='шаблоны'))
+async def template_button(callback: types.CallbackQuery, state: FSMContext):
+    # создание инлайн клавиатуры
+    b_1 = InlineKeyboardButton(text="Отмена", callback_data=f'отмена_ответа')
+    b_2 = InlineKeyboardButton(text="Шаблон1", callback_data=f'шаблон1')
+    b_3 = InlineKeyboardButton(text="Шаблон2", callback_data=f'шаблон2')
+    b_4 = InlineKeyboardButton(text="Шаблон3", callback_data=f'шаблон3')
+    kb = [[b_1], [b_2], [b_3], [b_4]]
+    inline_kb = InlineKeyboardMarkup(inline_keyboard=kb, resize_keyboard=True)
+
+    await callback.message.edit_text(text=callback.message.text, reply_markup=inline_kb)
+    await state.clear()
 
 
 # Обработка сообщений с фото
@@ -287,7 +322,7 @@ async def book_step(message: types.Message, state: FSMContext):
     await message.answer('Отправьте ответ <b>текстовым сообщением, картинкой или документом</b>', parse_mode='HTML')
 
 
-# обработка инлайн кнопки "ответить на заявку" продолжение
+# обработка инлайн кнопки "ответить на заявку" окончание
 @router.message(FSMadmin.answer_book)
 async def load_answer(message: types.Message, state: FSMContext):
     answer = message.text
@@ -305,7 +340,7 @@ async def load_answer(message: types.Message, state: FSMContext):
     await state.clear()
 
 
-# обработка инлайн кнопки "ответить" начало
+# обработка инлайн кнопки "ответить" на дополнение начало
 @router.callback_query(Text(startswith="ra"))
 async def send_manager_answer(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
@@ -313,8 +348,15 @@ async def send_manager_answer(callback: types.CallbackQuery, state: FSMContext):
     await state.update_data(user_id=user_id)
     number_q = callback.data.split('_')[1].rstrip()
     await state.update_data(number_q=number_q)
+
+    # создание инлайн клавиатуры
+    builder = InlineKeyboardBuilder()
+    builder.add(types.InlineKeyboardButton(text="Отмена", callback_data=f'отмена_ответа'))
+    builder.add(types.InlineKeyboardButton(text="Шаблоны", callback_data=f'шаблоны'))
+
     await bot.send_message(chat_id=group_id,
-                           text=f"Напишите ниже ваш ответ на дополнение к вопросу/заявке\n<b>#{number_q}</b>:", parse_mode='HTML')
+                           text=f"Напишите ниже ваш ответ на дополнение к вопросу/заявке <b>#{number_q}</b>:\n\
+<b>{callback.message.text.split(':', 1)[1].lstrip()}</b>", parse_mode='HTML', reply_markup=builder.as_markup())
     await state.set_state(FSMreqa.reqa)
 
 
@@ -366,7 +408,7 @@ async def book_step(message: types.Message, state: FSMContext):
     await message.answer('Отправьте ответ <b>текстовым сообщением, картинкой или документом</b>', parse_mode='HTML')
 
 
-# обработка инлайн кнопки "ответить" продолжение
+# обработка инлайн кнопки "ответить" окончание
 @router.message(FSMreqa.reqa)
 async def load_answer(message: types.Message, state: FSMContext):
     answer = message.text
