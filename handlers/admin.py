@@ -207,7 +207,7 @@ async def book_step(message: types.Message, state: FSMContext):
     await message.answer('Отправьте ответ <b>текстовым сообщением, картинкой или документом</b>', parse_mode='HTML')
 
 
-# обработка инлайн кнопки "ответить на вопрос" продолжение
+# обработка инлайн кнопки "ответить на вопрос" окончание
 @router.message(FSMadmin.answer)
 async def load_answer(message: types.Message, state: FSMContext):
     answer = message.text
@@ -287,7 +287,7 @@ async def book_step(message: types.Message, state: FSMContext):
     await message.answer('Отправьте ответ <b>текстовым сообщением, картинкой или документом</b>', parse_mode='HTML')
 
 
-# обработка инлайн кнопки "ответить на заявку" продолжение
+# обработка инлайн кнопки "ответить на заявку" окончание
 @router.message(FSMadmin.answer_book)
 async def load_answer(message: types.Message, state: FSMContext):
     answer = message.text
@@ -305,7 +305,7 @@ async def load_answer(message: types.Message, state: FSMContext):
     await state.clear()
 
 
-# обработка инлайн кнопки "ответить" начало
+# обработка инлайн кнопки "ответить" на дополнение начало
 @router.callback_query(Text(startswith="ra"))
 async def send_manager_answer(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
@@ -313,8 +313,8 @@ async def send_manager_answer(callback: types.CallbackQuery, state: FSMContext):
     await state.update_data(user_id=user_id)
     number_q = callback.data.split('_')[1].rstrip()
     await state.update_data(number_q=number_q)
-    await bot.send_message(chat_id=group_id,
-                           text=f"Напишите ниже ваш ответ на дополнение к вопросу/заявке\n<b>#{number_q}</b>:", parse_mode='HTML')
+    await bot.send_message(chat_id=group_id, text=f"Напишите ниже ваш ответ на дополнение к вопросу/заявке <b>#{number_q}</b>:\n\
+<b>{callback.message.text.split(':', 1)[1].lstrip()}</b>", parse_mode='HTML')
     await state.set_state(FSMreqa.reqa)
 
 
@@ -366,7 +366,7 @@ async def book_step(message: types.Message, state: FSMContext):
     await message.answer('Отправьте ответ <b>текстовым сообщением, картинкой или документом</b>', parse_mode='HTML')
 
 
-# обработка инлайн кнопки "ответить" продолжение
+# обработка инлайн кнопки "ответить" окончание
 @router.message(FSMreqa.reqa)
 async def load_answer(message: types.Message, state: FSMContext):
     answer = message.text
