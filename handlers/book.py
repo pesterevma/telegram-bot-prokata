@@ -30,6 +30,15 @@ router = Router()
 group_id = cfg['group_id']
 
 
+def parse_date(date_string):
+    formats = ['%d.%m.%y', '%d.%m.%Y', '%d/%m/%y', '%d/%m/%Y', '%d,%m,%y', '%d,%m,%Y']
+    for fmt in formats:
+        try:
+            return datetime.strptime(date_string, fmt)
+        except ValueError:
+            continue
+    raise ValueError(f"Date format for '{date_string}' is not supported")
+
 # Обработка кнопки возврата в главное меню
 @router.message(Text(text="Вернуться в главное меню", ignore_case=True))
 async def cmd_cancel(message: types.Message, state: FSMContext):
@@ -141,7 +150,7 @@ async def book_step(message: types.Message, state: FSMContext):
 @router.message(FSMbook.step6)
 async def book_step(message: types.Message, state: FSMContext):
     try:
-        start = datetime.strptime(message.text, '%d.%m.%y')
+        start = parse_date(message.text)
         now = datetime.now()
         if start.date() < now.date():
             raise NegativeDateError
@@ -173,7 +182,7 @@ async def book_step(message: types.Message, state: FSMContext):
     user_data = await state.get_data()
     start = user_data['start']
     try:
-        end = datetime.strptime(message.text, '%d.%m.%y')
+        end = parse_date(message.text)
         if end.date() < start.date():
             raise NegativeDateError
         await state.update_data(end=end)
