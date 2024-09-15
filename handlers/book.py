@@ -14,6 +14,10 @@ class NegativeDateError(Exception):
     pass
 
 
+class WeekendError(Exception):
+    pass
+
+
 class FSMbook(StatesGroup):
     step1 = State()
     step2 = State()
@@ -63,6 +67,16 @@ async def book_step(message: types.Message, state: FSMContext):
 @router.message(FSMbook.step1)
 async def book_step(message: types.Message, state: FSMContext):
     if message.text == 'Продолжить':
+
+        example_start_date = datetime.now()
+        while example_start_date.weekday() >= 5:
+            example_start_date += timedelta(days=1)
+        example_end_date = example_start_date + timedelta(days=1)
+        while example_end_date.weekday() >= 5:
+            example_end_date += timedelta(days=1)
+        await state.update_data(example_start_date=example_start_date)
+        await state.update_data(example_end_date=example_end_date)
+
         await message.answer('Вы раньше пользовались услугами нашего проката?', reply_markup=kb_book_2)
         await state.set_state(FSMbook.step2)
     else:
@@ -110,9 +124,11 @@ async def book_step(message: types.Message, state: FSMContext):
     if message.text.isdigit() and len(message.text) == 11:
         await state.update_data(phone=message.text)
         user_data = await state.get_data()
+        example_start_date = user_data['example_start_date']
         if user_data['old_client'] == 'Да':
-            await message.answer(f'Введите дату, в которую вы хотите получить снаряжение, \
-согласно образцу:\n<b>{datetime.strftime(datetime.now(), "%d.%m.%y")}</b> (день.месяц.год)', parse_mode='HTML')
+            await message.answer(f'Введите дату, в которую вы хотите <b>получить снаряжение</b>, \
+согласно образцу:\n<b>{datetime.strftime(example_start_date, "%d.%m.%y")}</b> (день.месяц.год)\n\
+Пожалуйста, учтите, что <b>мы не работаем в выходные</b>.', parse_mode='HTML')
             await state.set_state(FSMbook.step6)
         else:
             await message.answer('Введите ваш адрес регистрации \
@@ -134,37 +150,55 @@ async def book_step(message: types.Message, state: FSMContext):
 @router.message(FSMbook.step5)
 async def book_step(message: types.Message, state: FSMContext):
     await state.update_data(address=message.text)
-    await message.answer(f'Введите дату, в которую вы хотите получить снаряжение, \
-согласно образцу:\n<b>{datetime.strftime(datetime.now(), "%d.%m.%y")}</b> (день.месяц.год)', parse_mode='HTML')
+    user_data = await state.get_data()
+    example_start_date = user_data['example_start_date']
+    await message.answer(f'Введите дату, в которую вы хотите <b>получить снаряжение</b>, \
+согласно образцу:\n<b>{datetime.strftime(example_start_date, "%d.%m.%y")}</b> (день.месяц.год)\n\
+Пожалуйста, учтите, что <b>мы не работаем в выходные</b>.', parse_mode='HTML')
     await state.set_state(FSMbook.step6)
 
 
 # Отбраковка не текстовых сообщений на шаге ввода даты начала
 @router.message(FSMbook.step6, F.content_type != 'text')
 async def book_step(message: types.Message, state: FSMContext):
-    await message.answer(f'Пожалуйста, введите дату, в которую вы хотите получить снаряжение, \
-согласно образцу:\n<b>{datetime.strftime(datetime.now(), "%d.%m.%y")}</b> (день.месяц.год)', parse_mode='HTML')
+    user_data = await state.get_data()
+    example_start_date = user_data['example_start_date']
+    await message.answer(f'Пожалуйста, введите дату, в которую вы хотите <b>получить снаряжение</b>, \
+согласно образцу:\n<b>{datetime.strftime(example_start_date, "%d.%m.%y")}</b> (день.месяц.год)\n\
+Пожалуйста, учтите, что <b>мы не работаем в выходные</b>.', parse_mode='HTML')
 
 
 # Запрос даты начала
 @router.message(FSMbook.step6)
 async def book_step(message: types.Message, state: FSMContext):
     try:
+        user_data = await state.get_data()
+        example_start_date = user_data['example_start_date']
+        example_end_date = user_data['example_end_date']
+
         start = parse_date(message.text)
         now = datetime.now()
         if start.date() < now.date():
             raise NegativeDateError
+        if start.weekday() >= 5:
+            raise WeekendError
         await state.update_data(start=start)
-        await message.answer(f'Введите дату, в которую вы хотите сдать снаряжение, \
-согласно образцу:\n<b>{datetime.strftime(start + timedelta(1), "%d.%m.%y")}</b> (день.месяц.год)', parse_mode='HTML')
+        await message.answer(f'Введите дату, в которую вы хотите <b>сдать снаряжение</b>, \
+согласно образцу:\n<b>{datetime.strftime(example_end_date, "%d.%m.%y")}</b> (день.месяц.год)\n\
+Пожалуйста, учтите, что <b>мы не работаем в выходные</b>.', parse_mode='HTML')
         await state.set_state(FSMbook.step7)
     except NegativeDateError:
         await message.answer('К сожалению, вы не можете вернуться в прошлое 😔')
-        await message.answer(f'Пожалуйста, введите дату, в которую вы хотите получить снаряжение, \
-согласно образцу:\n<b>{datetime.strftime(datetime.now(), "%d.%m.%y")}</b> (день.месяц.год)', parse_mode='HTML')
+        await message.answer(f'Пожалуйста, введите дату, в которую вы хотите <b>получить снаряжение</b>, \
+согласно образцу:\n<b>{datetime.strftime(example_start_date, "%d.%m.%y")}</b> (день.месяц.год)\n\
+Пожалуйста, учтите, что <b>мы не работаем в выходные</b>.', parse_mode='HTML')
+    except WeekendError:
+        await message.answer('К сожалению, мы не работаем в выходные 😔\n\
+Пожалуйста, введите будний день.', parse_mode='HTML')
     except:
-        await message.answer(f'Пожалуйста, введите дату, в которую вы хотите получить снаряжение, \
-согласно образцу:\n<b>{datetime.strftime(datetime.now(), "%d.%m.%y")}</b> (день.месяц.год)', parse_mode='HTML')
+        await message.answer(f'Пожалуйста, введите дату, в которую вы хотите <b>получить снаряжение</b>, \
+согласно образцу:\n<b>{datetime.strftime(example_start_date, "%d.%m.%y")}</b> (день.месяц.год)\n\
+Пожалуйста, учтите, что <b>мы не работаем в выходные</b>.', parse_mode='HTML')
 
 
 # Отбраковка не текстовых сообщений на шаге ввода даты конца
@@ -172,8 +206,10 @@ async def book_step(message: types.Message, state: FSMContext):
 async def book_step(message: types.Message, state: FSMContext):
     user_data = await state.get_data()
     start = user_data['start']
-    await message.answer(f'Пожалуйста, введите дату, в которую вы хотите сдать снаряжение, \
-согласно образцу:\n<b>{datetime.strftime(start + timedelta(1), "%d.%m.%y")}</b> (день.месяц.год)', parse_mode='HTML')
+    example_end_date = user_data['example_end_date']
+    await message.answer(f'Пожалуйста, введите дату, в которую вы хотите <b>сдать снаряжение</b>, \
+согласно образцу:\n<b>{datetime.strftime(example_end_date, "%d.%m.%y")}</b> (день.месяц.год)\n\
+Пожалуйста, учтите, что <b>мы не работаем в выходные</b>.', parse_mode='HTML')
 
 
 # Запрос даты конца
@@ -181,21 +217,29 @@ async def book_step(message: types.Message, state: FSMContext):
 async def book_step(message: types.Message, state: FSMContext):
     user_data = await state.get_data()
     start = user_data['start']
+    example_end_date = user_data['example_end_date']
     try:
         end = parse_date(message.text)
         if end.date() < start.date():
             raise NegativeDateError
+        if end.weekday() >= 5:
+            raise WeekendError
         await state.update_data(end=end)
         await message.answer('Отправьте одним <b>текстовым сообщением</b> \
 список необходимого вам снаряжения в свободной форме', parse_mode='HTML')
         await state.set_state(FSMbook.step8)
     except NegativeDateError:
         await message.answer('Дата сдачи не может быть раньше даты выдачи 😔')
-        await message.answer(f'Пожалуйста, введите дату, в которую вы хотите сдать снаряжение, \
-согласно образцу:\n<b>{datetime.strftime(start + timedelta(1), "%d.%m.%y")}</b> (день.месяц.год)', parse_mode='HTML')
+        await message.answer(f'Пожалуйста, введите дату, в которую вы хотите <b>сдать снаряжение</b>, \
+согласно образцу:\n<b>{datetime.strftime(example_end_date, "%d.%m.%y")}</b> (день.месяц.год)\n\
+Пожалуйста, учтите, что <b>мы не работаем в выходные</b>.', parse_mode='HTML')
+    except WeekendError:
+        await message.answer('К сожалению, мы не работаем в выходные 😔\n\
+Пожалуйста, введите будний день.', parse_mode='HTML')
     except:
-        await message.answer(f'Пожалуйста, введите дату, в которую вы хотите сдать снаряжение, \
-согласно образцу:\n<b>{datetime.strftime(start + timedelta(1), "%d.%m.%y")}</b> (день.месяц.год)', parse_mode='HTML')
+        await message.answer(f'Пожалуйста, введите дату, в которую вы хотите <b>сдать снаряжение</b>, \
+согласно образцу:\n<b>{datetime.strftime(example_end_date, "%d.%m.%y")}</b> (день.месяц.год)\n\
+Пожалуйста, учтите, что <b>мы не работаем в выходные</b>.', parse_mode='HTML')
 
 
 # Отбраковка не текстовых сообщений на шаге ввода списка снаряжения
