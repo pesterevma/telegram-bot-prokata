@@ -71,11 +71,7 @@ async def book_step(message: types.Message, state: FSMContext):
         example_start_date = datetime.now()
         while example_start_date.weekday() >= 5:
             example_start_date += timedelta(days=1)
-        example_end_date = example_start_date + timedelta(days=1)
-        while example_end_date.weekday() >= 5:
-            example_end_date += timedelta(days=1)
         await state.update_data(example_start_date=example_start_date)
-        await state.update_data(example_end_date=example_end_date)
 
         await message.answer('Вы раньше пользовались услугами нашего проката?', reply_markup=kb_book_2)
         await state.set_state(FSMbook.step2)
@@ -174,7 +170,6 @@ async def book_step(message: types.Message, state: FSMContext):
     try:
         user_data = await state.get_data()
         example_start_date = user_data['example_start_date']
-        example_end_date = user_data['example_end_date']
 
         start = parse_date(message.text)
         now = datetime.now()
@@ -183,6 +178,12 @@ async def book_step(message: types.Message, state: FSMContext):
         if start.weekday() >= 5:
             raise WeekendError
         await state.update_data(start=start)
+
+        example_end_date = start + timedelta(days=1)
+        while example_end_date.weekday() >= 5:
+            example_end_date += timedelta(days=1)
+        await state.update_data(example_end_date=example_end_date)
+
         await message.answer(f'Введите дату, в которую вы хотите <b>сдать снаряжение</b>, \
 согласно образцу:\n<b>{datetime.strftime(example_end_date, "%d.%m.%y")}</b> (день.месяц.год)\n\
 Пожалуйста, учтите, что <b>мы не работаем в выходные</b>.', parse_mode='HTML')
